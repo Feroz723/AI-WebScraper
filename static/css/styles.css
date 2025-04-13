@@ -1,0 +1,20 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+}
+
+h1 {
+    color: #0d6efd;
+}
+
+.card {
+    margin-top: 20px;
+}
+
+.list-group-item {
+    background-color: #e9ecef;
+}
