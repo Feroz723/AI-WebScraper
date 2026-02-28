@@ -1,36 +1,52 @@
-from transformers import pipeline
+import re
+from typing import Dict
 
-# Load the pre-trained NLP model locally
-def load_local_model():
-    return pipeline("text-classification", model="distilbert-base-uncased")
+TASK_MAPPINGS = {
+    "product names": ["product", "products", "name", "names", "item", "items"],
+    "prices": ["price", "prices", "cost", "costs", "amount", "amounts"],
+    "headings": ["heading", "headings", "title", "titles", "header", "headers"],
+    "text": ["text", "content", "words", "paragraph", "paragraphs", "visible"],
+    "images": ["image", "images", "photo", "photos", "picture", "pictures"],
+}
 
-# Initialize the model once (singleton pattern)
-nlp = load_local_model()
 
-def interpret_query(query):
-    # Define mappings for common scraping tasks
-    task_mappings = {
-        "product names": ["product", "name", "item"],
-        "prices": ["price", "cost", "amount"],
-        "headings": ["heading", "title", "header"],
-        "text": ["text", "content", "displayed", "visible"],
-        "images": ["image", "images", "photo", "photos", "picture", "pictures"]
-    }
-    
-    # Tokenize the query into lowercase words
-    tokens = query.lower().split()
-    
-    # Identify matching tasks
-    result = {}
-    for task, keywords in task_mappings.items():
+def _tokenize(query: str) -> list[str]:
+    return re.findall(r"[a-zA-Z0-9']+", query.lower())
+
+
+def interpret_query(query: str) -> Dict[str, str]:
+    """Interpret a natural-language scraping query.
+
+    Returns a dictionary with:
+    - task: one of supported scraping tasks
+    - filter: optional keyword filter text
+    """
+    tokens = _tokenize(query)
+
+    result: Dict[str, str] = {}
+    for task, keywords in TASK_MAPPINGS.items():
         if any(keyword in tokens for keyword in keywords):
             result["task"] = task
             break
-    
-    # Add filters if specified (e.g., "only headings with 'sale'")
-    if "only" in tokens:
-        index = tokens.index("only")
-        filter_words = tokens[index + 1:]
-        result["filter"] = " ".join(filter_words)
-    
+
+    # Parse filter phrases like:
+    # - only red
+    # - only red shoes
+    # - containing sale
+    # - with keyword sale
+    filter_patterns = [
+        r"\bonly\s+(.+)$",
+        r"\bcontaining\s+(.+)$",
+        r"\bwith\s+(?:keyword\s+)?(.+)$",
+    ]
+
+    lowered = query.lower().strip()
+    for pattern in filter_patterns:
+        match = re.search(pattern, lowered)
+        if match:
+            filter_text = match.group(1).strip(" .,!?:;\"'")
+            if filter_text:
+                result["filter"] = filter_text
+            break
+
     return result
