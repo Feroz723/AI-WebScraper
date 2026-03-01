@@ -5,5 +5,6 @@ set -e
 
 pip install -r requirements.txt
 
-# Install Chromium browser only (no system deps — Render already has them)
+# Set browser path and install Chromium
+export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/playwright_browsers
 python -m playwright install chromium
