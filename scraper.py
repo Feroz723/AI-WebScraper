@@ -1,7 +1,11 @@
 from bs4 import BeautifulSoup
 import requests
-from playwright.sync_api import sync_playwright
 import os
+
+# Set Playwright browser path to project directory
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "playwright_browsers")
+
+from playwright.sync_api import sync_playwright
 from urllib.parse import urljoin
 
 def fetch_static_website(url):
@@ -53,6 +57,9 @@ def extract_data(html, task, filter_text=None, url=None):
                 absolute_url = urljoin(url, src)
                 final_url = get_final_image_url(absolute_url)  # Resolve proxied URLs
                 result.append(final_url)
+    elif task == "links":
+        link_tags = soup.find_all('a', href=True)
+        result = [urljoin(url, tag['href']) for tag in link_tags if tag['href'].strip()]
     
     # Apply filter if specified
     if filter_text:

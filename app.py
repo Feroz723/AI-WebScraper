@@ -1,9 +1,15 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, Response, jsonify
 import os
+import json
+import time
+
+# Set Playwright browser path to project directory
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "playwright_browsers")
+
 from io import BytesIO
 from urllib.parse import urlparse
-import requests
-from scraper import scrape_website
+import requests as http_requests
+from scraper import fetch_static_website, fetch_dynamic_website, extract_data, download_images
 from nlp_processor import interpret_query
 
 app = Flask(__name__)
@@ -13,25 +19,62 @@ os.makedirs("output", exist_ok=True)
 os.makedirs("output/images", exist_ok=True)
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def index():
-    if request.method == "POST":
-        url = request.form.get("url", "").strip()
-        query = request.form.get("query", "").strip()
+    return render_template("index.html")
 
+
+@app.route("/scrape")
+def scrape():
+    """SSE endpoint that streams progress events during scraping."""
+    url = request.args.get("url", "").strip()
+    query = request.args.get("query", "").strip()
+
+    def generate():
+        def send_event(progress, message, data=None, error=None, task=None):
+            event = {"progress": progress, "message": message}
+            if data is not None:
+                event["data"] = data
+            if error is not None:
+                event["error"] = error
+            if task is not None:
+                event["task"] = task
+            return f"data: {json.dumps(event)}\n\n"
+
+        # Validate inputs
         if not url or not query:
-            return render_template("index.html", error="Please provide both a URL and a query.")
+            yield send_event(0, "Error", error="Please provide both a URL and a query.")
+            return
 
+        # Stage 1: Interpret query (10%)
+        yield send_event(10, "Analyzing your query...")
         parsed_query = interpret_query(query)
-        if not parsed_query.get("task"):
-            return render_template("index.html", error="Sorry, I couldn't understand your query. Please try again.")
-
-        task = parsed_query["task"]
+        task = parsed_query.get("task", "text")
         filter_text = parsed_query.get("filter")
+        time.sleep(0.3)  # Small delay so progress is visible
 
+        # Stage 2: Fetch page (40%)
+        yield send_event(40, f"Fetching page content...")
         try:
-            data = scrape_website(url, task, filter_text)
+            try:
+                html = fetch_static_website(url)
+            except Exception:
+                html = fetch_dynamic_website(url)
+        except Exception as e:
+            yield send_event(0, "Error", error=f"Failed to fetch page: {e}")
+            return
 
+        # Stage 3: Extract data (70%)
+        yield send_event(70, f"Extracting {task}...")
+        try:
+            data = extract_data(html, task, filter_text, url)
+        except Exception as e:
+            yield send_event(0, "Error", error=f"Failed to extract data: {e}")
+            return
+
+        # Stage 4: Save results (90%)
+        yield send_event(90, "Saving results...")
+        try:
             output_file = "output/output.txt"
             with open(output_file, "w", encoding="utf-8") as file:
                 file.write(f"{task.capitalize()}:\n")
@@ -39,17 +82,17 @@ def index():
                     file.write(f"- {item}\n")
                 file.write("\n")
 
-            result = {
-                "task": task,
-                "text": f"Scraping completed! Found {len(data)} items.",
-                "data": data,
-                "download_link": "/download",
-            }
-            return render_template("index.html", result=result)
+            if task == "images":
+                download_images(data)
         except Exception as e:
-            return render_template("index.html", error=f"An error occurred: {e}")
+            yield send_event(0, "Error", error=f"Failed to save results: {e}")
+            return
 
-    return render_template("index.html")
+        # Stage 5: Complete (100%)
+        yield send_event(100, f"Done! Found {len(data)} items.", data=data, task=task)
+
+    return Response(generate(), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.route("/download")
@@ -64,7 +107,7 @@ def download_image():
         return "Missing image URL", 400
 
     try:
-        response = requests.get(image_url, timeout=20)
+        response = http_requests.get(image_url, timeout=20)
         response.raise_for_status()
 
         parsed = urlparse(image_url)

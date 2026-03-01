@@ -1,6 +1,10 @@
+import os
+
+# Set Playwright browser path to project directory
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "playwright_browsers")
+
 from scraper import scrape_website
 from nlp_processor import interpret_query
-import os
 
 
 def main():

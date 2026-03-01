@@ -1,86 +1,561 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>AI-Powered Web Scraper</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3B82F6",
+                        "background-dark": "#0F172A",
+                    },
+                    fontFamily: {
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3B82F6, transparent);
+            box-shadow: 0 0 15px #3B82F6;
+        }
+
+        .neo-input {
+            background: rgba(15, 23, 42, 0.6);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .neo-input:focus {
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3), 0 0 15px rgba(59, 130, 246, 0.3);
+            border-color: #3B82F6;
+        }
+
+        .push-button {
+            position: relative;
+            background: #2563EB;
+            box-shadow: 0 4px 0 #1D4ED8, 0 10px 20px rgba(37, 99, 235, 0.4);
+            transition: all 0.1s ease;
+            transform: translateY(-4px);
+        }
+
+        .push-button:active {
+            transform: translateY(0px);
+            box-shadow: 0 0 0 #1D4ED8, 0 5px 10px rgba(37, 99, 235, 0.2);
+        }
+
+        .push-button:disabled {
+            opacity: 0.7;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 0 #1D4ED8, 0 5px 10px rgba(37, 99, 235, 0.2);
+        }
+
+        .liquid-progress {
+            background: linear-gradient(90deg, #3B82F6 0%, #06B6D4 100%);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+            position: relative;
+            overflow: hidden;
+            transition: width 0.5s ease;
+        }
+
+        .liquid-progress::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
+            animation: sweep 2s infinite linear;
+        }
+
+        @keyframes sweep {
+            from {
+                transform: translateX(-100%);
+            }
+
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        .floating-icon {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .inner-glow {
+            box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Results area */
+        .result-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+        }
+
+        .result-list-item {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #cbd5e1;
+            padding: 12px 16px;
+            border-radius: 10px;
+            word-break: break-all;
+            font-size: 0.9rem;
+            transition: background 0.2s ease;
+        }
+
+        .result-list-item:hover {
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .image-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .image-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 10px;
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        .image-load-error img {
+            display: none;
+        }
+
+        .image-meta {
+            margin-top: 8px;
+            min-height: 36px;
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        .image-actions {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .img-btn {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .img-btn-open {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .img-btn-open:hover {
+            background: rgba(59, 130, 246, 0.4);
+        }
+
+        .img-btn-copy {
+            background: rgba(100, 116, 139, 0.2);
+            color: #94a3b8;
+        }
+
+        .img-btn-copy:hover {
+            background: rgba(100, 116, 139, 0.4);
+        }
+
+        .img-btn-dl {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            text-decoration: none;
+        }
+
+        .img-btn-dl:hover {
+            background: rgba(34, 197, 94, 0.4);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
-<body>
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">AI-Powered Web Scraper</h1>
-        <form method="POST" class="mb-4">
-            <div class="mb-3">
-                <label for="url" class="form-label">Website URL</label>
-                <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com" required>
-            </div>
-            <div class="mb-3">
-                <label for="query" class="form-label">What do you want to scrape?</label>
-                <input type="text" class="form-control" id="query" name="query" placeholder="e.g., Extract all product names and prices" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Scrape</button>
-        </form>
 
-        {% if error %}
-        <div class="alert alert-danger">{{ error }}</div>
-        {% endif %}
+<body class="bg-background-dark font-display min-h-screen flex items-center justify-center p-6 overflow-x-hidden">
 
-        {% if result %}
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Results</h5>
-                <p class="card-text">{{ result.text }}</p>
-
-                {% if result.task == 'images' %}
-                <div class="image-grid">
-                    {% for item in result.data %}
-                    <div class="image-card">
-                        <img src="{{ item }}" alt="Scraped image {{ loop.index }}" loading="lazy" onerror="this.parentElement.classList.add('image-load-error')">
-                        <div class="image-meta">
-                            <small class="text-break">{{ item }}</small>
-                        </div>
-                        <div class="image-actions">
-                            <a href="{{ item }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">Open</a>
-                            <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" data-url="{{ item }}">Copy URL</button>
-                            <a href="{{ url_for('download_image') }}?url={{ item | urlencode }}" class="btn btn-sm btn-success">Download</a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <ul class="list-group">
-                    {% for item in result.data %}
-                    <li class="list-group-item">{{ item }}</li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
-
-                <a href="{{ url_for('download') }}" class="btn btn-success mt-3">Download Results</a>
-            </div>
-        </div>
-        {% endif %}
+    <!-- Background blurs -->
+    <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-500/10 rounded-full blur-[120px]"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Floating decorative icons -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden hidden lg:block">
+        <span
+            class="material-icons-round floating-icon absolute text-blue-500/20 text-6xl top-20 left-[15%]">storage</span>
+        <span class="material-icons-round floating-icon absolute text-cyan-500/20 text-8xl bottom-20 left-[10%]"
+            style="animation-delay:-2s;">auto_awesome</span>
+        <span class="material-icons-round floating-icon absolute text-indigo-500/20 text-7xl top-40 right-[15%]"
+            style="animation-delay:-4s;">data_object</span>
+        <span class="material-icons-round floating-icon absolute text-blue-400/20 text-5xl bottom-40 right-[10%]"
+            style="animation-delay:-1s;">cloud_download</span>
+    </div>
+
+    <div class="relative z-10 w-full max-w-2xl">
+        <!-- Title -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-2">
+                <span
+                    class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                    AI-Powered Scraper
+                </span>
+            </h1>
+            <p class="text-slate-500 font-medium">Extracting intelligence from the web in real-time</p>
+        </div>
+
+        <!-- Main panel -->
+        <div class="glass-panel p-8 md:p-12 rounded-[2rem] relative overflow-hidden">
+            <div class="absolute inset-0 inner-glow pointer-events-none rounded-[2rem]"></div>
+            <form id="scrapeForm" class="space-y-8 relative z-10">
+                <!-- URL input -->
+                <div class="space-y-3">
+                    <label
+                        class="flex items-center gap-2 text-sm font-bold text-slate-300 uppercase tracking-widest ml-1">
+                        <span class="material-icons-round text-primary text-lg">link</span>
+                        Website URL
+                    </label>
+                    <input id="url"
+                        class="w-full neo-input rounded-2xl px-6 py-4 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-0"
+                        placeholder="https://example.com/products/..." type="url" required />
+                </div>
+
+                <!-- Query input -->
+                <div class="space-y-3">
+                    <label
+                        class="flex items-center gap-2 text-sm font-bold text-slate-300 uppercase tracking-widest ml-1">
+                        <span class="material-icons-round text-cyan-400 text-lg">psychology</span>
+                        Extraction Strategy
+                    </label>
+                    <input id="query"
+                        class="w-full neo-input rounded-2xl px-6 py-4 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-0"
+                        placeholder="e.g., Extract all product names and prices" type="text" required />
+                </div>
+
+                <!-- Submit button -->
+                <div class="pt-4">
+                    <button type="submit" id="scrapeBtn"
+                        class="w-full push-button py-4 rounded-2xl text-white font-bold text-xl flex items-center justify-center gap-3">
+                        <span class="material-icons-round" id="btnIcon">rocket_launch</span>
+                        <span id="btnText">Launch Scraper</span>
+                    </button>
+                </div>
+
+                <!-- Progress bar (hidden by default) -->
+                <div id="progressContainer" class="hidden space-y-4 pt-4 fade-in">
+                    <div class="flex justify-between items-end mb-1">
+                        <div class="flex items-center gap-2">
+                            <span class="material-icons-round text-cyan-400 text-sm animate-pulse"
+                                id="progressIcon">hourglass_top</span>
+                            <span class="text-sm font-semibold text-slate-400" id="progressMessage">Starting...</span>
+                        </div>
+                        <span class="text-2xl font-black text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+                            id="progressPercent">0%</span>
+                    </div>
+                    <div
+                        class="h-10 w-full bg-slate-900/80 rounded-full p-1.5 shadow-[inset_0_4px_10px_rgba(0,0,0,0.8)] border border-slate-700/50">
+                        <div class="liquid-progress h-full rounded-full" id="progressFill" style="width:0%">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent h-[40%] rounded-t-full">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div
+                class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-500/5 to-transparent pointer-events-none">
+            </div>
+        </div>
+
+        <!-- Error alert -->
+        <div id="errorContainer" class="hidden mt-6 fade-in">
+            <div class="glass-panel rounded-2xl p-6 border-red-500/30 relative overflow-hidden">
+                <div class="flex items-center gap-3">
+                    <span class="material-icons-round text-red-400 text-2xl">error_outline</span>
+                    <p class="text-red-300 font-medium" id="errorMessage"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="resultContainer" class="hidden mt-8 fade-in">
+            <div class="glass-panel rounded-[2rem] p-8 md:p-10 relative overflow-hidden">
+                <div class="absolute inset-0 inner-glow pointer-events-none rounded-[2rem]"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <span class="material-icons-round text-green-400 text-2xl">check_circle</span>
+                            <h2 class="text-xl font-bold text-white">Results</h2>
+                        </div>
+                        <a href="/download"
+                            class="push-button px-5 py-2.5 rounded-xl text-white font-semibold text-sm flex items-center gap-2 no-underline"
+                            style="transform:translateY(-2px);box-shadow:0 2px 0 #1D4ED8,0 5px 10px rgba(37,99,235,0.3);">
+                            <span class="material-icons-round text-sm">download</span>
+                            Download
+                        </a>
+                    </div>
+                    <p class="text-slate-400 font-medium mb-6" id="resultSummary"></p>
+                    <div id="resultContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer stats -->
+        <div class="mt-8 flex justify-center gap-8" id="footerStats">
+            <div class="text-center">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-tighter">Status</p>
+                <p class="text-lg font-bold text-slate-300" id="statStatus">Ready</p>
+            </div>
+            <div class="w-px h-8 bg-slate-800 self-center"></div>
+            <div class="text-center">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-tighter">Items</p>
+                <p class="text-lg font-bold text-slate-300" id="statItems">—</p>
+            </div>
+            <div class="w-px h-8 bg-slate-800 self-center"></div>
+            <div class="text-center">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-tighter">Task</p>
+                <p class="text-lg font-bold text-slate-300" id="statTask">—</p>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.querySelectorAll('.copy-btn').forEach((button) => {
-            button.addEventListener('click', async () => {
-                const url = button.getAttribute('data-url');
-                try {
-                    await navigator.clipboard.writeText(url);
-                    button.textContent = 'Copied!';
-                    setTimeout(() => {
-                        button.textContent = 'Copy URL';
-                    }, 1400);
-                } catch {
-                    button.textContent = 'Copy failed';
-                    setTimeout(() => {
-                        button.textContent = 'Copy URL';
-                    }, 1400);
-                }
+        const form = document.getElementById('scrapeForm');
+        const scrapeBtn = document.getElementById('scrapeBtn');
+        const btnIcon = document.getElementById('btnIcon');
+        const btnText = document.getElementById('btnText');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressMessage = document.getElementById('progressMessage');
+        const progressIcon = document.getElementById('progressIcon');
+        const errorContainer = document.getElementById('errorContainer');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultSummary = document.getElementById('resultSummary');
+        const resultContent = document.getElementById('resultContent');
+        const statStatus = document.getElementById('statStatus');
+        const statItems = document.getElementById('statItems');
+        const statTask = document.getElementById('statTask');
+
+        const stageIcons = {
+            10: 'psychology',
+            40: 'cloud_download',
+            70: 'data_object',
+            90: 'save',
+            100: 'check_circle',
+        };
+
+        function resetUI() {
+            errorContainer.classList.add('hidden');
+            resultContainer.classList.add('hidden');
+            progressFill.style.width = '0%';
+            progressPercent.textContent = '0%';
+            progressMessage.textContent = 'Starting...';
+            progressIcon.textContent = 'hourglass_top';
+            statStatus.textContent = 'Scraping...';
+            statItems.textContent = '—';
+            statTask.textContent = '—';
+        }
+
+        function showError(msg) {
+            progressContainer.classList.add('hidden');
+            errorContainer.classList.remove('hidden');
+            errorMessage.textContent = msg;
+            scrapeBtn.disabled = false;
+            btnIcon.classList.remove('animate-spin');
+            btnIcon.textContent = 'rocket_launch';
+            btnText.textContent = 'Launch Scraper';
+            statStatus.textContent = 'Error';
+        }
+
+        function updateProgress(percent, message) {
+            progressFill.style.width = percent + '%';
+            progressPercent.textContent = percent + '%';
+            progressMessage.textContent = message;
+            if (stageIcons[percent]) {
+                progressIcon.textContent = stageIcons[percent];
+            }
+        }
+
+        function renderResults(data, message, task) {
+            progressContainer.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+            resultSummary.textContent = message;
+            statStatus.textContent = 'Complete';
+            statItems.textContent = data.length;
+            statTask.textContent = task.charAt(0).toUpperCase() + task.slice(1);
+
+            if (task === 'images') {
+                let html = '<div class="image-grid">';
+                data.forEach((item, idx) => {
+                    html += `
+                        <div class="image-card">
+                            <img src="${item}" alt="Scraped image ${idx + 1}" loading="lazy"
+                                 onerror="this.parentElement.classList.add('image-load-error')">
+                            <div class="image-meta"><small class="text-break">${item}</small></div>
+                            <div class="image-actions">
+                                <a href="${item}" target="_blank" rel="noopener" class="img-btn img-btn-open">Open</a>
+                                <button type="button" class="img-btn img-btn-copy copy-btn" data-url="${item}">Copy URL</button>
+                                <a href="/download-image?url=${encodeURIComponent(item)}" class="img-btn img-btn-dl">Download</a>
+                            </div>
+                        </div>`;
+                });
+                html += '</div>';
+                resultContent.innerHTML = html;
+            } else {
+                let html = '<div class="space-y-2 max-h-[400px] overflow-y-auto pr-2">';
+                data.forEach(item => {
+                    const escaped = item.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    html += `<div class="result-list-item">${escaped}</div>`;
+                });
+                html += '</div>';
+                resultContent.innerHTML = html;
+            }
+
+            // Attach copy handlers
+            resultContent.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', async () => {
+                    const url = button.getAttribute('data-url');
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        button.textContent = 'Copied!';
+                        setTimeout(() => { button.textContent = 'Copy URL'; }, 1400);
+                    } catch {
+                        button.textContent = 'Failed';
+                        setTimeout(() => { button.textContent = 'Copy URL'; }, 1400);
+                    }
+                });
             });
+
+            scrapeBtn.disabled = false;
+            btnIcon.classList.remove('animate-spin');
+            btnIcon.textContent = 'rocket_launch';
+            btnText.textContent = 'Launch Scraper';
+        }
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            resetUI();
+
+            const url = document.getElementById('url').value.trim();
+            const query = document.getElementById('query').value.trim();
+
+            if (!url || !query) {
+                showError('Please provide both a URL and a query.');
+                return;
+            }
+
+            scrapeBtn.disabled = true;
+            btnIcon.classList.add('animate-spin');
+            btnIcon.textContent = 'refresh';
+            btnText.textContent = 'Scraping...';
+            progressContainer.classList.remove('hidden');
+
+            const evtSource = new EventSource(`/scrape?url=${encodeURIComponent(url)}&query=${encodeURIComponent(query)}`);
+
+            evtSource.onmessage = function (event) {
+                const payload = JSON.parse(event.data);
+
+                if (payload.error) {
+                    evtSource.close();
+                    showError(payload.error);
+                    return;
+                }
+
+                updateProgress(payload.progress, payload.message);
+
+                if (payload.progress === 100 && payload.data !== undefined) {
+                    evtSource.close();
+                    setTimeout(() => {
+                        renderResults(payload.data, payload.message, payload.task);
+                    }, 500);
+                }
+            };
+
+            evtSource.onerror = function () {
+                evtSource.close();
+                showError('Connection lost. Please try again.');
+            };
         });
     </script>
 </body>
+
 </html>
