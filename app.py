@@ -3,9 +3,13 @@ import os
 import json
 import time
 
-# Set Playwright browser path to project directory (if not already set by hosting platform)
-if "PLAYWRIGHT_BROWSERS_PATH" not in os.environ:
-    os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "playwright_browsers")
+# Set Playwright browser path — auto-detect Render vs local
+if os.environ.get("RENDER"):
+    # On Render: use the path set during build
+    os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", "/opt/render/project/src/playwright_browsers")
+else:
+    # Local: use project directory
+    os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "playwright_browsers"))
 
 from io import BytesIO
 from urllib.parse import urlparse
